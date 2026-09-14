@@ -1,10 +1,27 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import {
+  HttpClient,
+  HttpHeaders
+} from '@angular/common/http';
+
 import { Observable } from 'rxjs';
+
+export interface User {
+  id: string;
+  email: string;
+}
 
 export interface LoginResponse {
   success: boolean;
   message: string;
+  token?: string;
+  user?: User;
+}
+
+export interface DashboardResponse {
+  success: boolean;
+  message: string;
+  user: User;
 }
 
 @Injectable({
@@ -12,17 +29,117 @@ export interface LoginResponse {
 })
 export class Auth {
 
-  private apiUrl = 'http://localhost:3000/api';
+  private readonly apiUrl =
+    'http://localhost:3000/api';
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient
+  ) {}
 
-  login(email: string, password: string): Observable<LoginResponse> {
+  // ========================================
+  // LOGIN
+  // ========================================
+
+  login(
+    email: string,
+    password: string
+  ): Observable<LoginResponse> {
+
     return this.http.post<LoginResponse>(
       `${this.apiUrl}/login`,
       {
-        email: email,
-        password: password
+        email,
+        password
       }
     );
+  }
+
+  // ========================================
+  // REGISTER
+  // ========================================
+
+  register(
+    email: string,
+    password: string
+  ): Observable<any> {
+
+    return this.http.post(
+      `${this.apiUrl}/register`,
+      {
+        email,
+        password
+      }
+    );
+  }
+
+  // ========================================
+  // TOKEN
+  // ========================================
+
+  getToken(): string | null {
+
+    return localStorage.getItem('token');
+  }
+
+  // ========================================
+  // LOGGED IN
+  // ========================================
+
+  isLoggedIn(): boolean {
+
+    return !!this.getToken();
+  }
+
+  // ========================================
+  // DASHBOARD
+  // ========================================
+
+  getDashboard(): Observable<DashboardResponse> {
+
+    const token = this.getToken();
+
+    const headers = new HttpHeaders({
+      Authorization: `Bearer ${token}`
+    });
+
+    return this.http.get<DashboardResponse>(
+      `${this.apiUrl}/dashboard`,
+      {
+        headers
+      }
+    );
+  }
+
+  // ========================================
+  // CHECK TOKEN
+  // ========================================
+
+  checkToken(): Observable<any> {
+
+    const token = this.getToken();
+
+    const headers = new HttpHeaders({
+      Authorization: `Bearer ${token}`
+    });
+
+    return this.http.get(
+      `${this.apiUrl}/auth/check`,
+      {
+        headers
+      }
+    );
+  }
+
+  // ========================================
+  // LOGOUT
+  // ========================================
+
+  logout(): void {
+
+    localStorage.removeItem('token');
+
+    localStorage.removeItem('isLoggedIn');
+
+    localStorage.removeItem('userEmail');
   }
 }
